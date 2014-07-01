@@ -1,0 +1,10 @@
+Package: ranadeyPkg
+Type: Package
+Title: Personal
+Version: 1.0
+Date: 2014-06-26
+Author: Sagar Tiparadi
+Maintainer: Sagar Tiparadi <sagartiparadi@gmail.com>
+Description: More about what it does (maybe more than one line)
+License: Sagar Tiparadi
+Packaged: 2014-06-26 06:09:30 UTC; Samphal
