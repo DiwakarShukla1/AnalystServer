@@ -266,7 +266,10 @@ cropCount=function(cropData){
 # Individual Methods
 #-----------------
 
-
+getFarmerCropByID=function(key,data){
+  data=data[data$farmer==key,]
+  return(data)
+}
 
 
 #-----------------------------------------------------------------------------------------
@@ -297,6 +300,12 @@ readFarmer=function(){
 
 # Indivisual Methods
 #-----------------
+getFarmerByID=function(key,data){
+  data=data[data$X_id==key,]
+  # print(data)
+  return(data)
+}
+
 getTimeDetails=function(key,farmerData){
   q=1
   timeData=list('f0to1'=0,'f1to2'=0,'f2to3'=0,'f3to4'=0,'f4to5'=0,'f5to6'=0,'f6to7'=0,'f7to8'=0,'f8to9'=0,'f9to10'=0,'f10to11'=0,'f11to12'=0,'f12to13'=0,'f13to14'=0,'f14to15'=0,'f15to16'=0,'f16to17'=0,'f17to18'=0,'f18to19'=0,'f19to20'=0,'f20to21'=0,'f22to22'=0,'f22to23'=0,'f23to24'=0)
@@ -480,7 +489,7 @@ farmerStat=function(param){
   farmer=readFarmer()
   advice=readAdvice()
   crop=readCrop()
-
-  return(create_json(param))
+  data=list('Profile'=getFarmerByID(key,farmer),'Crop'=getFarmerCropByID(key,crop),'Advice'=getFarmerCropByID(key,advice))
+  return(create_json(data))
 }
 
