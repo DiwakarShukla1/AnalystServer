@@ -1,27 +1,31 @@
-library(rjson)
 
 #-----------------------------------------------------------------------------------------
 #--------------------------------------overall--------------------------------------------
 #-----------------------------------------------------------------------------------------
 
+# for creating json format
 create_json=function(data){
   library(rjson)
   json <- toJSON(data)
   return(json)
 }
 
+# get count of Advice, Farmer, Crop Entry
 entityCount=function(data){
   return(nrow(data))
 }
 
+# get todays count of Advice, Farmer, Crop Entry
 todaysEntityCount=function(data){
   return(sum(data$created_at==Sys.Date()))
 }
 
+# get Monthly count of Advice, Farmer, Crop Entry
 currentMonthEntityCount=function(data){
   return(sum(substr(data$created_at,1,7)==substr(Sys.Date(),1,7)))
 }
 
+# get last week count of Advice, Farmer, Crop Entry
 entityCountLastWeek=function(data){
   data=aggregate(data$count ~ data$created_at, data = data, sum)
   data=data[order(data$'data$created_at',decreasing = TRUE),]
@@ -34,15 +38,12 @@ entityCountLastWeek=function(data){
 #--------------------------------------Advice Pkg-----------------------------------------
 #-----------------------------------------------------------------------------------------
 
-# Support Methods
-#-----------------
-
+# filter Advice data
 filterAdvice=function(adviceData){
   adviceData=adviceData[order(adviceData$created_at),]
   adviceData=adviceData[adviceData$owner!="maheshgrt007@gmail.com",]
   adviceData=adviceData[adviceData$owner!="sagar.75@hotmail.com",]
   adviceData$name=NULL
-  adviceData$visitor=NULL
   adviceData$times=substr(adviceData$created_at, 12, 19);
   adviceData$created_at= as.Date(adviceData$created_at)
   adviceData$spray_date= as.Date(adviceData$spray_date)
@@ -54,19 +55,19 @@ filterAdvice=function(adviceData){
   return(adviceData)
 }
 
+# read Advice Data
 readAdvice=function(){
-  return(filterAdvice(read.csv("http://ec2-54-187-6-49.us-west-2.compute.amazonaws.com:9002/adviceList.csv",header=TRUE,sep="|")))
+  return(filterAdvice(read.csv("adviceList.csv",header=TRUE,sep="|")))
 }
 
+# done the product collboration and return count
 productCollborate=function(data){
   Data <- data$product
   table(sapply(Data,paste,collapse=""))
   return(sum(table(unlist(Data))))
 }
 
-# Group Methods
-#-----------------
-
+# count product advice for particular date
 countProductAdviceByDate=function(data,date){
   data=data[data$created_at==date,]
   if(nrow(data)>0)
@@ -75,6 +76,7 @@ countProductAdviceByDate=function(data,date){
     return(0)
 }
 
+# count last week product advice count
 countLastWeekProductAdvice=function(data){
   temp=list()
   i=0
@@ -87,55 +89,66 @@ countLastWeekProductAdvice=function(data){
   return(temp)
 }
 
+# count current month product advice count
 countCurrentMonthProductAdvice=function(data){
   data=data[substr(data$created_at,1,7)==substr(Sys.Date(),1,7),]
   return(productCollborate(data))
 }
 
-gettotaladviceoverall=function(data){
+# Advice count of all employee
+countTotalAdviceOverall=function(data){
   data = aggregate(data$count ~ data$owner, data = data, sum)
   return(create_json(data))
 }
 
-getCountOfProductAdvicedOverall=function(adviceData){
+# Product Advice count of all employee
+countOfProductAdvicedOverall=function(adviceData){
   testData <- adviceData$product
   table(sapply(testData,paste,collapse=""))
   return(table(unlist(testData)))
 }
 
-getAdviceCountByVisitType=function(adviceData){
+# Advice count by visit type of all employee
+countAdviceByVisitType=function(adviceData){
   return(aggregate(adviceData$count ~ adviceData$owner + adviceData$visit_type, data = adviceData, sum))
 }
 
-# Individual Methods
-#-----------------
-
+# count todays visit by particular employee
 countTodaysVisitByEmp=function(key,data){
   data=data[data$created_at==Sys.Date(),]
   data=data[data$owner==key,]
   return(nrow(data))
 }
 
+# count current month visit by particular employee
 countCurrentMonthVisitByEmp=function(key,data){
   data=data[substr(data$created_at,1,7)==substr(Sys.Date(),1,7),]
   data=data[data$owner==key,]
   return(nrow(data))
 }
 
-getCountByCropForAdviceByEmp=function(key,adviceData){
+# ?????????
+countOfCropForAdviceByEmp=function(key,adviceData){
+  adviceData=na.omit(adviceData$crop)
   adviceData=aggregate(adviceData$count ~ adviceData$owner + adviceData$crop, data = adviceData, sum)
   adviceData=adviceData[adviceData$'adviceData$owner'==key,]
-  return(adviceData)
+  adviceData=adviceData[adviceData$'adviceData$crop'!="",]
+  i=1
+  data=list()
+  while(i<=nrow(adviceData)){
+    data[[i]]=list('Crop'=adviceData[i,2],'CountOfVisit'=adviceData[i,3])
+    i=i+1
+  }
+  return(data)
 }
 
-adviceDaysPatternOfEmp=function(key,adviceData){
+# days pattern
+daysPattern=function(data){
   q=1
   daysData=list('Wednesday'=0,'Thursday'=0,'Friday'=0,'Saturday'=0,'Sunday'=0,'Monday'=0,'Tuesday'=0)
-  while(q<nrow(adviceData))
+  while(q<=nrow(data))
   {
-    if(key == adviceData[q,4])
-    {
-      day=weekdays(adviceData[q,]$created_at)
+      day=weekdays(data[q,]$created_at)
       if(day=="Wednesday"){daysData$Wednesday=as.numeric(daysData$Wednesday)+1}
       else if(day=="Thursday"){daysData$Thursday=as.numeric(daysData$Thursday)+1}
       else if(day=="Friday"){daysData$Friday=as.numeric(daysData$Friday)+1}
@@ -143,10 +156,15 @@ adviceDaysPatternOfEmp=function(key,adviceData){
       else if(day=="Sunday"){daysData$Sunday=as.numeric(daysData$Sunday)+1}
       else if(day=="Monday"){daysData$Monday=as.numeric(daysData$Monday)+1}
       else if(day=="Tuesday"){daysData$Tuesday=as.numeric(daysData$Tuesday)+1}
-    }
-    q=q+1
   }
+    q=q+1
   return(daysData)
+}
+
+adviceDaysPatternOfEmp=function(key,adviceData){
+  adviceData=adviceData[adviceData$owner==key,]
+  data=daysPattern(adviceData)
+  return(data)
 }
 
 adviceTimePatternOfEmp=function(key,adviceData){
@@ -199,16 +217,16 @@ adviceCountByVisitTypeOfEmp=function(key,adviceData){
   return(vist_t)
 }
 
-getCountOfProductAdviceOfEmp=function(key,adviceData){  
-  uni_data=unique(adviceData$owner)
-  i=1
-  Data=adviceData
-  while(i<=length(uni_data)){
-    if(uni_data[i]!=key){
-      Data=Data[Data$owner!=uni_data[i],]
-    }
-    i=i+1
-  }
+getCountOfProductAdviceOfEmp=function(key,Data){  
+  # uni_data=unique(adviceData$owner)
+  # i=1
+  Data=Data[Data$owner==key,]
+  # while(i<=length(uni_data)){
+  #   if(uni_data[i]!=key){
+  #     Data=Data[Data$owner!=uni_data[i],]
+  #   }
+  #   i=i+1
+  # }
   Data <- Data$product
   table(sapply(Data,paste,collapse=""))
   return(table(unlist(Data)))
@@ -230,7 +248,7 @@ filterCrop=function(cropData){
 }
 
 readCrop=function(){
-  return(filterCrop(read.csv("http://ec2-54-187-6-49.us-west-2.compute.amazonaws.com:9002/cropList.csv")))
+  return(filterCrop(read.csv("cropList.csv")))
 }
 
 # Group Methods
@@ -295,7 +313,7 @@ uniqueOwner_F=function(data){
 }
 
 readFarmer=function(){
-  return(filterFarmer(read.csv("http://ec2-54-187-6-49.us-west-2.compute.amazonaws.com:9002/farmerList.csv")))
+  return(filterFarmer(read.csv("farmerList.csv")))
 }
 
 # Indivisual Methods
@@ -429,6 +447,27 @@ farmerListByEmployee = function(farmerData){
   return(data)
 }
 
+
+
+
+lastFarmerVisit=function(key){
+  advice=readAdvice()
+  advice$owner=NULL
+  advice$crop=NULL
+  advice$spray_date=NULL
+  advice$visitor=NULL
+  advice$product=NULL
+  advice$picture=NULL
+  advice$count=NULL
+  advice$times=NULL
+  advice=advice[advice$farmer=='374418a1-19ad-4ae4-8925-dcaff3a97e92',]
+  advice$farmer=NULL
+  advice=advice[order(advice$created_at,decreasing = TRUE),]
+  advice=list(advice)
+  return(head(advice,1))
+}
+
+
 #--------------------------------------------------------------------------------
 
 
@@ -475,7 +514,10 @@ employeeStat=function(param){
             'FarmerCount'=farmerCountByEmp(key,farmer),
             'TodaysVisit'=countTodaysVisitByEmp(key,advice),
             'CurrentMonthAdviceCount'=countCurrentMonthVisitByEmp(key,advice),
-            # 'CurrentMonthProductAdviceCount'=countCurrentMonthProductAdvice(data[data$owner==key,]),
+            'OverallProductAdviceCount'=getCountOfProductAdviceOfEmp(key,advice),
+            'AddFarmerPatternByDays'=getDaysDetails(key,farmer),
+            'AddFarmerPatternByTime'=getTimeDetails(key,farmer),
+            # 'AdviceCountByCrop':countOfCropForAdviceByEmp(key,advice),
             'FarmerList'=farmerList(key,farmer)
             )
    return(create_json(data))
@@ -493,3 +535,75 @@ farmerStat=function(param){
   return(create_json(data))
 }
 
+
+# Farmer List
+overallFarmerList=function(param){
+  farmer=readFarmer()
+  i=1
+  data=list()
+  while(i<=nrow(farmer)){
+    data[[i]]=list('Name'=farmer[i,1],'owner'=farmer[i,2],'created_at'=toString(farmer[i,3]),'village'=farmer[i,6],'id'=farmer[i,7],'picture'=farmer[i,8])
+    i=i+1
+  }
+  return(create_json(data))
+}
+
+# Employee list
+overallEmployeeList=function(param){
+  advice=readAdvice()
+  advice$created_at=NULL
+  advice$crop=NULL
+  advice$farmer=NULL
+  advice$spray_date=NULL
+  advice$visit_type=NULL
+  advice$product=NULL
+  advice$picture=NULL
+  advice$count=NULL
+  advice$times=NULL
+  advice=unique(advice)
+  i=1
+  data=list()
+  while(i<=nrow(advice)){
+    data[[i]]=list('Name'=advice[i,2],'owner'=advice[i,1])
+    i=i+1
+  }
+  return(create_json(data))
+}
+
+# List of Farmer with parameter
+allFarmerList=function(param){
+  data=readFarmer()
+  data$owner=NULL
+  data$created_at=NULL
+  data$latitude=NULL
+  data$longitude=NULL
+  data$times=NULL
+  data$count=NULL
+  i=1
+  data1=list()
+  while(i<=nrow(data)){
+    data1[[i]]=list('Name'=data[i,1],'Village'=data[i,2],'id'=data[i,3],'picture'=data[i,4])
+    i=i+1
+  }
+  return(create_json(data1))
+}
+
+farmerCountOverall = function(farmerData){
+  data=list()
+  a=1
+  uni=uniqueOwner_F(farmerData)
+  for(i in uni){
+    data[[a]]=list('owner'=i, 'Count' = length(farmerList(i,farmerData)))
+    a=a+1
+  }
+  return(data)
+}
+
+farmerListForLocationByEmp=function(param){
+  library(rjson)
+  param <- fromJSON(param)
+  key = param$first
+  farmer=readFarmer()
+  data=farmerList(key,farmer)
+  return(create_json(data))
+}

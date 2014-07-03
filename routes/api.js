@@ -4,8 +4,11 @@ fileManager = require('./fileManager');
 
 
 exports.middlewareAdvice = function(req, res) {
+	// res.writeHead(200,{"Content-Type":"application/json"});
+	res.header('Access-Control-Allow-Origin','*');
 	var method = req.params.methodname;
 	var firstparam="";
+	console.log("Method Called")
 	if(req.params.firstparam) {
 		firstparam = req.params.firstparam;
 	}
